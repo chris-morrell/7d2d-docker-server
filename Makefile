@@ -4,9 +4,10 @@ build:
 	docker images --quiet --filter "dangling=true" --filter "label=builder=true" | xargs docker rmi
 
 init:
-# Used to run the container for the first time
-# This lets the container initialize the docker volume
-# and populate it with the generated XML files.
+# Used to run the container for the first time. This lets
+# the 7d2d server spin up and generate the default xml config
+# files that are then copied out to $(pwd)/config for modification
+# by the user.
 	mkdir -p config
 	docker run --rm --name "7days-docker-init" --mount type=bind,source="$(shell pwd)/config",target=/home/steam/config 7daysdocker:latest /home/steam/init.sh
 
