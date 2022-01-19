@@ -1,7 +1,10 @@
+
+vol_mount = /home/steam/.local/share/7DaysToDie/Saves/
+
 build:
 # Build the container, remove the intermediate build stages.
 	docker build --rm --tag "7daysdocker:latest" .
-	docker images --quiet --filter "dangling=true" --filter "label=builder=true" | xargs docker rmi
+	#docker images --quiet --filter "dangling=true" --filter "label=builder=true" | xargs docker rmi
 
 init:
 # Used to run the container for the first time. This lets
@@ -9,21 +12,36 @@ init:
 # files that are then copied out to $(pwd)/config for modification
 # by the user.
 	mkdir -p config
-	docker run --rm --name "7days-docker-init" --mount type=bind,source="$(shell pwd)/config",target=/home/steam/config 7daysdocker:latest /home/steam/init.sh
+	docker run --rm --name "7days-docker-init" \
+		--mount type=bind,source="$(shell pwd)/config",target=/home/steam/config \
+		7daysdocker:latest /home/steam/init.sh
 
 configure:
 # This will copy config files from the config directory into
 # the named docker volume that will be used to deploy.
-	docker run --rm --name "7days-docker-config" --mount type=bind,source="$(shell pwd)/config",target=/home/steam/config --mount type=volume,source=7d2dsaves,destination=/home/steam/.local/share/7DaysToDie/Saves/ 7daysdocker:latest /home/steam/config.sh
+	docker run --rm --name "7days-docker-config" \
+		--mount type=bind,source="$(shell pwd)/config",target=/home/steam/config \
+		--mount type=volume,source=7d2dsaves,destination=$(vol_mount) \
+		7daysdocker:latest /home/steam/config.sh
 
 run:
 # Useful for a final check before a deploy.
-	docker run -it --rm --name "7days-docker-run" --mount source=7d2dsaves,destination=/home/steam/.local/share/7DaysToDie/Saves/ -p 26900-26902:26900-26902/udp -p 26900:26900/tcp -p 26899:8080/tcp 7daysdocker:latest /home/steam/run.sh
-
+	docker run -it --rm --name "7days-docker-run" \
+		--mount source=7d2dsaves,destination=$(vol_mount) \
+		-p 26900-26902:26900-26902/udp \
+		-p 26900:26900/tcp \
+		-p 26899:8080/tcp \
+		7daysdocker:latest /home/steam/run.sh
 
 deploy:
 # Deploy the server such that it persists with reboots.
-	docker run -d --restart unless-stopped --name "7days-docker-deploy" --mount source=7d2dsaves,destination=/home/steam/.local/share/7DaysToDie/Saves/ -p 26900-26902:26900-26902/udp -p 26900:26900/tcp -p 26899:8080/tcp 7daysdocker:latest /home/steam/run.sh
+	docker run -d --name "7days-docker-deploy" \
+		--restart unless-stopped \
+		--mount source=7d2dsaves,destination=$(vol_mount) \
+		-p 26900-26902:26900-26902/udp \
+		-p 26900:26900/tcp \
+		-p 26899:8080/tcp \
+		7daysdocker:latest /home/steam/run.sh
 
 stop:
 # Tough debate between better communication vs /dev/null stderr.
