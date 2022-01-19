@@ -4,7 +4,7 @@ vol_mount = /home/steam/.local/share/7DaysToDie/Saves/
 build:
 # Build the container, remove the intermediate build stages.
 	docker build --rm --tag "7daysdocker:latest" .
-	docker images --quiet --filter "dangling=true" --filter "label=builder=true" | xargs docker rmi
+	#docker images --quiet --filter "dangling=true" --filter "label=builder=true" | xargs docker rmi
 
 init:
 # Used to run the container for the first time. This lets
